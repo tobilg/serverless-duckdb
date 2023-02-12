@@ -12,7 +12,7 @@ DuckDB is automatically configured to use the [HTTPFS extension](https://duckdb.
 If you want to also query data (e.g. Parquet files) that resides in one or more S3 buckets, you'll have to adjust the `iamRoleStatements` part of the function configuration in the [serverless.yml](serverless.yml#L45) file. Just replace the `YOUR-S3-BUCKET-NAME` with your actual S3 bucket name.
 
 ## Deployment
-After you cloned this repository to your local machine and cd'ed in its directory, the application can be deployed like this:
+After you cloned this repository to your local machine and cd'ed in its directory, the application can be deployed like this (after a `npm i` to install the dependencies!):
 
 ```bash
 $ sls deploy
