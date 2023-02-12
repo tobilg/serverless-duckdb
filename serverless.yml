@@ -1,0 +1,65 @@
+service: serverless-duckdb
+
+frameworkVersion: '3'
+
+plugins:
+  - serverless-iam-roles-per-function
+  - serverless-prune-plugin
+  - serverless-webpack
+
+custom:
+
+  # API details
+  api:
+    version: 'v1'
+  
+  #Webpack settings
+  webpack:
+    webpackConfig: 'webpack.config.serverless.js'
+
+  # Prune plugin
+  prune:
+    automatic: true
+    number: 3
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  region: ${opt:region, 'us-east-1'}
+  stage: 'prd'
+  logRetentionInDays: 14
+  apiGateway:
+    apiKeys:
+      - DuckDBKey
+  environment:
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1' # Enable HTTP keep-alive connections for the AWS SDK
+    STAGE: '${self:provider.stage}'
+    LOG_LEVEL: 'debug'
+
+functions:
+
+  query:
+    handler: src/functions/query.handler
+    memorySize: 10240
+    timeout: 30
+    # iamRoleStatements:
+    #   - Effect: Allow
+    #     Action:
+    #       - s3:GetObject
+    #     Resource: 'arn:aws:s3:::YOUR-S3-BUCKET-NAME/*'
+    #   - Effect: Allow
+    #     Action:
+    #       - s3:ListBucket
+    #     Resource:
+    #       - 'arn:aws:s3:::YOUR-S3-BUCKET-NAME'
+    layers:
+      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-layer:1'
+    events:
+      - http:
+          path: ${self:custom.api.version}/query
+          method: post
+          cors: true
+          private: true
+
+package:
+  individually: true
