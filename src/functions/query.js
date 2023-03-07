@@ -59,7 +59,7 @@ export const handler = metricScope(metrics => async (event, context) => {
       
       // Load httpsfs
       await query(`SET home_directory='/tmp';`);
-      //await query(`INSTALL httpfs;`);
+      // Hint: INSTALL httpfs; is no longer needed, as it's now in the static build starting from layer version 6
       await query(`LOAD httpfs;`);
       
       // New speedup option, see https://github.com/duckdb/duckdb/pull/5405
