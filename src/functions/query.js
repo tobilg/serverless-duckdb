@@ -62,8 +62,10 @@ export const handler = metricScope(metrics => async (event, context) => {
       // Hint: INSTALL httpfs; is no longer needed, as it's now in the static build starting from layer version 6
       await query(`LOAD httpfs;`);
       
-      // New speedup option, see https://github.com/duckdb/duckdb/pull/5405
+      // Whether or not the global http metadata is used to cache HTTP metadata, see https://github.com/duckdb/duckdb/pull/5405
       await query(`SET enable_http_metadata_cache=true;`);
+      // Whether or not object cache is used to cache e.g. Parquet metadata
+      await query(`SET enable_object_cache=true;`);
 
       requestLogger.debug({ message: 'Initial setup done!' });
       metrics.putMetric('InitialSetupDuration', (new Date().getTime() - initialSetupStartTimestamp), Unit.Milliseconds);
