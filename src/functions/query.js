@@ -59,7 +59,7 @@ export const handler = metricScope(metrics => async (event, context) => {
       
       // Load httpsfs
       await query(`SET home_directory='/tmp';`);
-      await query(`INSTALL httpfs;`);
+      //await query(`INSTALL httpfs;`);
       await query(`LOAD httpfs;`);
       
       // New speedup option, see https://github.com/duckdb/duckdb/pull/5405
