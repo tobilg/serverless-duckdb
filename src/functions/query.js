@@ -103,7 +103,9 @@ export const handler = metricScope(metrics => async (event, context) => {
     requestLogger.error(err);
     return {
       statusCode: 400,
-      body: JSON.stringify(err.message),
+      body: JSON.stringify({
+        error: err.message
+      }),
     }
   }
 })
