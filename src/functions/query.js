@@ -6,7 +6,7 @@ import Logger from '../lib/logger';
 const logger = new Logger();
 
 // Instantiate DuckDB
-const duckDB = new DuckDB.Database(':memory:');
+const duckDB = new DuckDB.Database(':memory:', { allow_unsigned_extensions: 'true' });
 
 // Create connection
 const connection = duckDB.connect();
@@ -103,7 +103,7 @@ export const handler = metricScope(metrics => async (event, context) => {
     requestLogger.error(err);
     return {
       statusCode: 400,
-      body: JSON.stringify(err),
+      body: JSON.stringify(err.message),
     }
   }
 })
