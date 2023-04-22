@@ -43,17 +43,31 @@ functions:
     memorySize: 10240
     timeout: 30
     # iamRoleStatements:
+    #   # Read from input bucket
     #   - Effect: Allow
     #     Action:
     #       - s3:GetObject
-    #     Resource: 'arn:aws:s3:::YOUR-S3-BUCKET-NAME/*'
+    #     Resource: 'arn:aws:s3:::YOUR-S3-INPUT-BUCKET-NAME/*'
     #   - Effect: Allow
     #     Action:
     #       - s3:ListBucket
-    #     Resource:
-    #       - 'arn:aws:s3:::YOUR-S3-BUCKET-NAME'
+    #     Resource: 'arn:aws:s3:::YOUR-S3-INPUT-BUCKET-NAME'
+    #   # If you want to write to another output bucket, use the statements below
+    #   # (or use the same bucket name as the input bucket if you want to write to it as well)
+    #   - Effect: Allow
+    #     Action:
+    #       - s3:ListBucket
+    #       - s3:ListBucketMultipartUploads
+    #     Resource: 'arn:aws:s3:::YOUR-S3-OUTPUT-BUCKET-NAME'
+    #   - Effect: Allow
+    #     Action:
+    #       - s3:GetObject
+    #       - s3:PutObject
+    #       - s3:AbortMultipartUpload
+    #       - s3:ListMultipartUploadParts
+    #     Resource: 'arn:aws:s3:::YOUR-S3-OUTPUT-BUCKET-NAME/*'
     layers:
-      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-extensions-x86:1'
+      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:1'
     events:
       - http:
           path: ${self:custom.api.version}/query
