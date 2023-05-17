@@ -67,7 +67,7 @@ functions:
     #       - s3:ListMultipartUploadParts
     #     Resource: 'arn:aws:s3:::YOUR-S3-OUTPUT-BUCKET-NAME/*'
     layers:
-      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:1'
+      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:3'
     events:
       - http:
           path: ${self:custom.api.version}/query
