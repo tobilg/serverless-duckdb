@@ -42,6 +42,9 @@ functions:
     handler: src/functions/query.handler
     memorySize: 10240
     timeout: 30
+    # Enable this for arm64 support
+    # architecture: arm64
+    # Enable this for custom IAM roles for S3 access
     # iamRoleStatements:
     #   # Read from input bucket
     #   - Effect: Allow
@@ -68,6 +71,8 @@ functions:
     #     Resource: 'arn:aws:s3:::YOUR-S3-OUTPUT-BUCKET-NAME/*'
     layers:
       - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:3'
+      # Enable this for arm64 support
+      # - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-arm64:1'
     events:
       - http:
           path: ${self:custom.api.version}/query
