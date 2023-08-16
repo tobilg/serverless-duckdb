@@ -1,0 +1,3 @@
+{
+  "query": "SELECT description, Min_Charge, Max_Charge, Product_Name_Minimum, Product_Name_Maximum FROM 'https://beta.payless.health/data/131624096_mount-sinai-hospital_standardcharges-subset.parquet' WHERE Code_type = 'Charge_Code' AND Primary_Code IN (18480415, 18480213, 18480214);" 
+}
