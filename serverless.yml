@@ -1,3 +1,5 @@
+org: jaanli
+app: serverless-duckdb
 service: serverless-duckdb
 
 frameworkVersion: '3'
@@ -40,7 +42,7 @@ functions:
 
   query:
     handler: src/functions/query.handler
-    memorySize: 10240
+    memorySize: 3008
     timeout: 30
     # Enable this for arm64 support
     # architecture: arm64
