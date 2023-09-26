@@ -2,6 +2,11 @@ import DuckDB from 'duckdb';
 import { metricScope, Unit } from 'aws-embedded-metrics';
 import Logger from '../lib/logger';
 
+// Patch BigInt
+BigInt.prototype["toJSON"] = function () {
+  return this.toString();
+};
+
 // Instantiate logger
 const logger = new Logger();
 
@@ -61,6 +66,12 @@ export const handler = metricScope(metrics => async (event, context) => {
       await query(`SET home_directory='/tmp';`);
       // Hint: INSTALL httpfs; is no longer needed, as it's now in the static build starting from layer version 6
       await query(`LOAD httpfs;`);
+
+      // Load spatial extension by default
+      // await query(`LOAD '/opt/nodejs/node_modules/duckdb/extensions/spatial.duckdb_extension';`);
+
+      // Enable loading of custom Lambda extensions from quacking.cloud (only spatial & arrow so far!)
+      // await query(`SET custom_extension_repository = 'http://extensions.quacking.cloud';`);
       
       // Whether or not the global http metadata is used to cache HTTP metadata, see https://github.com/duckdb/duckdb/pull/5405
       await query(`SET enable_http_metadata_cache=true;`);

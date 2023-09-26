@@ -70,9 +70,12 @@ functions:
     #       - s3:ListMultipartUploadParts
     #     Resource: 'arn:aws:s3:::YOUR-S3-OUTPUT-BUCKET-NAME/*'
     layers:
-      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:3'
-      # Enable this for arm64 support
-      # - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-arm64:1'
+      # Latest x86_64 layer
+      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:5'
+      # Latest arm64 layer
+      # - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-arm64:3'
+      # Latest x86_64 layer containing the spatial extension 
+      # - arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-spatial-x86:2
     events:
       - http:
           path: ${self:custom.api.version}/query
