@@ -67,11 +67,11 @@ export const handler = metricScope(metrics => async (event, context) => {
       // Hint: INSTALL httpfs; is no longer needed, as it's now in the static build starting from layer version 6
       await query(`LOAD httpfs;`);
 
-      // Load spatial extension by default
+      // Load spatial extension by default (only if you use the spatial layer)
       // await query(`LOAD '/opt/nodejs/node_modules/duckdb/extensions/spatial.duckdb_extension';`);
 
-      // Enable loading of custom Lambda extensions from quacking.cloud (only spatial & arrow so far!)
-      // await query(`SET custom_extension_repository = 'http://extensions.quacking.cloud';`);
+      // Enable loading of Lambda extensions from https://extensions.quacking.cloud (see website for list of extensions)
+      await query(`SET custom_extension_repository = 'http://extensions.quacking.cloud';`);
       
       // Whether or not the global http metadata is used to cache HTTP metadata, see https://github.com/duckdb/duckdb/pull/5405
       await query(`SET enable_http_metadata_cache=true;`);
