@@ -61,17 +61,21 @@ export const handler = metricScope(metrics => async (event, context) => {
     // Check if DuckDB has been initalized
     if (!isInitialized) {
       const initialSetupStartTimestamp = new Date().getTime();
-      
-      // Load httpsfs
+
+      // Load home directory
       await query(`SET home_directory='/tmp';`);
-      // Hint: INSTALL httpfs; is no longer needed, as it's now in the static build starting from layer version 6
+
+      // Enable loading of Lambda extensions from https://extensions.quacking.cloud (see website for list of extensions)
+      await query(`SET custom_extension_repository = 'http://extensions.quacking.cloud';`);
+      
+      // Hint: INSTALL httpfs; is needed again, because it's no longer included in the new repo:
+      // https://github.com/duckdb/duckdb-node/tree/v0.9.1/src/duckdb/extension
+      // This will install it from http://extensions.quacking.cloud
+      await query(`INSTALL httpfs;`);
       await query(`LOAD httpfs;`);
 
       // Load spatial extension by default (only if you use the spatial layer)
       // await query(`LOAD '/opt/nodejs/node_modules/duckdb/extensions/spatial.duckdb_extension';`);
-
-      // Enable loading of Lambda extensions from https://extensions.quacking.cloud (see website for list of extensions)
-      await query(`SET custom_extension_repository = 'http://extensions.quacking.cloud';`);
       
       // Whether or not the global http metadata is used to cache HTTP metadata, see https://github.com/duckdb/duckdb/pull/5405
       await query(`SET enable_http_metadata_cache=true;`);

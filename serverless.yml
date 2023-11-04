@@ -71,9 +71,9 @@ functions:
     #     Resource: 'arn:aws:s3:::YOUR-S3-OUTPUT-BUCKET-NAME/*'
     layers:
       # Latest x86_64 layer
-      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:5'
+      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:6'
       # Latest arm64 layer
-      # - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-arm64:3'
+      # - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-arm64:4'
       # Latest x86_64 layer containing the spatial extension 
       # - arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-spatial-x86:2
     events:
