@@ -5,7 +5,7 @@ frameworkVersion: '3'
 plugins:
   - serverless-iam-roles-per-function
   - serverless-prune-plugin
-  - serverless-webpack
+  - serverless-esbuild
 
 custom:
 
@@ -13,9 +13,14 @@ custom:
   api:
     version: 'v1'
   
-  #Webpack settings
-  webpack:
-    webpackConfig: 'webpack.config.serverless.js'
+  # esbuild plugin
+  esbuild:
+    bundle: true
+    minify: false
+    exclude:
+      - 'duckdb'
+      - 'aws-lambda'
+      - 'dtrace-provider'
 
   # Prune plugin
   prune:
@@ -37,6 +42,16 @@ provider:
     LOG_LEVEL: 'debug'
 
 functions:
+
+  streamingQuery:
+    handler: src/functions/streamingQuery.handler
+    memorySize: 10240
+    timeout: 60
+    url:
+      invokeMode: RESPONSE_STREAM
+    layers:
+      # Latest x86 layer
+      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:7'
 
   query:
     handler: src/functions/query.handler
@@ -71,9 +86,9 @@ functions:
     #     Resource: 'arn:aws:s3:::YOUR-S3-OUTPUT-BUCKET-NAME/*'
     layers:
       # Latest x86_64 layer
-      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:6'
+      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:7'
       # Latest arm64 layer
-      # - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-arm64:4'
+      # - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-arm64:5'
       # Latest x86_64 layer containing the spatial extension 
       # - arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-spatial-x86:2
     events:

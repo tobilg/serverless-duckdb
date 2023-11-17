@@ -1,23 +1,16 @@
-import AWSLambda, { APIGatewayProxyEventV2, Context } from 'aws-lambda';
-import { streamifyResponse, ResponseStream } from 'lambda-stream';
+import { APIGatewayProxyEventV2, Context } from 'aws-lambda';
+import { Writable, pipeline } from 'stream';
+import { promisify } from 'util';
 import DuckDB from 'duckdb';
 import Logger from '../lib/logger';
-import { promisify } from 'util';
-import { pipeline, Readable } from 'stream';
-//import zlib from 'zlib'
-//import { Writable } from 'stream';
-
-
-// declare namespace awslambda {
-//   export namespace HttpResponseStream {
-//     function from(writable: Writable, metadata: any): Writable;
-//   }
-// }
+import { Metadata } from '../@types/awslambda';
 
 const Pipeline = promisify(pipeline);
 
 // Instantiate logger
-const logger = new Logger(undefined).getInstance();
+const logger = new Logger({
+  name: 'duckdb-streaming-logger',
+}).getInstance();
 
 // Instantiate DuckDB
 const duckDB = new DuckDB.Database(':memory:', { allow_unsigned_extensions: 'true' });
@@ -50,40 +43,39 @@ process.on('SIGTERM', async () => {
 });
 
 // eslint-disable-next-line import/prefer-default-export
-export const handler = streamifyResponse(myHandler);
-  
-async function myHandler (
+exports.handler = awslambda.streamifyResponse(async (
   event: APIGatewayProxyEventV2,
-  responseStream: ResponseStream,
-  context: Context | undefined,
-): Promise<void> {
+  responseStream: Writable, 
+  context: Context
+): Promise<void> => {
   // Setup logger
   const requestLogger = logger.child({ requestId: context!.awsRequestId });
   requestLogger.debug({ event, context });
 
-  const metadata = {
+  const metadata: Metadata = {
     statusCode: 200,
     headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "*",
-      "Access-Control-Expose-Headers": "*",
-      "Access-Control-Max-Age": 0,
-      "Access-Control-Allow-Methods": "*",
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': '*',
+      'Access-Control-Expose-Headers': '*',
+      'Access-Control-Max-Age': 0,
+      'Access-Control-Allow-Methods': '*',
     }
   };
 
-  // Use global helper to pass metadata and status code
-  const response = awslambda.HttpResponseStream.from(responseStream, metadata);
-
   try {
-
-    if (event.requestContext.http.method === "OPTIONS") {
-      requestLogger.debug("OPTIONS request");
-      response.setContentType('text/plain');
-      response.end();
-    } else {
+    if (event.requestContext.http.method === 'OPTIONS') {
+      // Set content type header
+      metadata.headers['Content-Type'] = 'text/plain';
+      // Use global helper to pass metadata and status code
+      responseStream = awslambda.HttpResponseStream.from(responseStream, metadata);
+      // Need to write something, otherwiese metadata is not shown -> CORS error!
+      responseStream.write('OK');
+      responseStream.end();
+    } else if (event.requestContext.http.method === 'POST') {
       // Parse event body with query
-      const body = event.body;
+      const body = event.body?.replace(/;/g, '');
+      requestLogger.debug({ body });
       
       // Check if DuckDB has been initalized
       if (!isInitialized) {
@@ -105,6 +97,10 @@ async function myHandler (
         await query(`INSTALL arrow;`);
         await query(`LOAD arrow;`);
 
+        // Install the spatial extension
+        await query(`INSTALL spatial;`);
+        await query(`LOAD spatial;`);
+
         // Load spatial extension by default (only if you use the spatial layer)
         // await query(`LOAD '/opt/nodejs/node_modules/duckdb/extensions/spatial.duckdb_extension';`);
         
@@ -120,9 +116,9 @@ async function myHandler (
         // Set AWS credentials
         // See https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime
         await query(`SET s3_region='${process.env.AWS_REGION}';`);
-        await query(`SET s3_access_key_id='${process.env.AWS_ACCESS_KEY_ID}';`);
-        await query(`SET s3_secret_access_key='${process.env.AWS_SECRET_ACCESS_KEY}';`);
-        await query(`SET s3_session_token='${process.env.AWS_SESSION_TOKEN}';`);
+        // await query(`SET s3_access_key_id='${process.env.AWS_ACCESS_KEY_ID}';`);
+        // await query(`SET s3_secret_access_key='${process.env.AWS_SECRET_ACCESS_KEY}';`);
+        // await query(`SET s3_session_token='${process.env.AWS_SESSION_TOKEN}';`);
 
         requestLogger.debug({ message: 'AWS setup done!' });
 
@@ -130,17 +126,38 @@ async function myHandler (
         isInitialized = true;
       }
 
-    // Track query start timestamp
-    const queryStartTimestamp = new Date().getTime();
+      // Track query start timestamp
+      const queryStartTimestamp = new Date().getTime();
 
-    response.setContentType('application/octet-stream');
-    await Pipeline(await connection.arrowIPCStream(`SELECT * FROM 'https://shell.duckdb.org/data/tpch/0_01/parquet/orders.parquet' LIMIT 1000`), response);
-    response.end();
+      // Set Content-Type header
+      metadata.headers['Content-Type'] = 'application/octet-stream';
+
+      // Use global helper to pass metadata and status code
+      responseStream = awslambda.HttpResponseStream.from(responseStream, metadata);
+
+      if (body?.startsWith('install') || body?.startsWith('load') || body?.startsWith('pragma')) {
+        // Run query
+        const queryResult = await query(body);
+      } else {
+        // Pipeline the Arrow IPC stream to the response stream
+        await Pipeline(await connection.arrowIPCStream(body), responseStream);
+      }
+
+      // Close response stream
+      responseStream.end();
+    } else { // Invalid request method
+      metadata.statusCode = 400;
+      metadata.headers['Content-Type'] = 'text/plain';
+      responseStream = awslambda.HttpResponseStream.from(responseStream, metadata);
+      responseStream.write('ERROR');
+      responseStream.end();
     }
   } catch (e: any) {
     logger.error(e.message);
-    response.setContentType('text/plain');
-    response.write(e.message);
-    response.end();
+    metadata.statusCode = 500;
+    metadata.headers['Content-Type'] = 'text/plain';
+    responseStream = awslambda.HttpResponseStream.from(responseStream, metadata);
+    responseStream.write(e.message);
+    responseStream.end();
   }
-}
+});
