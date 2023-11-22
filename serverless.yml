@@ -43,19 +43,21 @@ provider:
 
 functions:
 
+  # Streaming Lambda function: Will return results as Apache Arrow IPC stream
   streamingQuery:
     handler: src/functions/streamingQuery.handler
-    memorySize: 10240
-    timeout: 60
+    memorySize: 2048
+    timeout: 30
     url:
       invokeMode: RESPONSE_STREAM
     layers:
       # Latest x86 layer
       - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:7'
 
+  # Request-Response Lambda function: Will return results as JSON en bloc
   query:
     handler: src/functions/query.handler
-    memorySize: 10240
+    memorySize: 2048
     timeout: 30
     # Enable this for arm64 support
     # architecture: arm64

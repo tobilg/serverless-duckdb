@@ -4,6 +4,7 @@ import { Writable } from 'stream';
 type Headers = {
   [header: string]: string | number;
 }
+
 type Metadata = {
   statusCode: number;
   headers: Headers;

@@ -4,7 +4,9 @@ import { promisify } from 'util';
 import DuckDB from 'duckdb';
 import Logger from '../lib/logger';
 import { Metadata } from '../@types/awslambda';
+import { filterQuery } from '../lib/queryFilter';
 
+// Create pipeline stream
 const Pipeline = promisify(pipeline);
 
 // Instantiate logger
@@ -22,9 +24,9 @@ const connection = duckDB.connect();
 let isInitialized = false;
 
 // Promisify query method
-const query = (query: string) => {
+const query = (query: string, isRemoteQuery: boolean = true) => {
   return new Promise((resolve, reject) => {
-    connection.all(query, (err, res) => {
+    connection.all(filterQuery(query, isRemoteQuery), (err, res) => {
       if (err) reject(err);
       resolve(res);
     })
@@ -52,6 +54,7 @@ exports.handler = awslambda.streamifyResponse(async (
   const requestLogger = logger.child({ requestId: context!.awsRequestId });
   requestLogger.debug({ event, context });
 
+  // Create default metadata for HTTP status code and headers
   const metadata: Metadata = {
     statusCode: 200,
     headers: {
@@ -79,46 +82,35 @@ exports.handler = awslambda.streamifyResponse(async (
       
       // Check if DuckDB has been initalized
       if (!isInitialized) {
-        const initialSetupStartTimestamp = new Date().getTime();
-
         // Load home directory
-        await query(`SET home_directory='/tmp';`);
+        await query(`SET home_directory='/tmp';`, false);
 
         // Enable loading of Lambda extensions from https://extensions.quacking.cloud (see website for list of extensions)
-        await query(`SET custom_extension_repository = 'http://extensions.quacking.cloud';`);
+        await query(`SET custom_extension_repository = 'http://extensions.quacking.cloud';`, false);
         
         // Hint: INSTALL httpfs; is needed again, because it's no longer included in the new repo:
         // https://github.com/duckdb/duckdb-node/tree/v0.9.1/src/duckdb/extension
         // This will install it from http://extensions.quacking.cloud
-        await query(`INSTALL httpfs;`);
-        await query(`LOAD httpfs;`);
+        await query(`INSTALL httpfs;`, false);
+        await query(`LOAD httpfs;`, false);
 
         // Install the Apache Arrow extension
-        await query(`INSTALL arrow;`);
-        await query(`LOAD arrow;`);
-
-        // Install the spatial extension
-        await query(`INSTALL spatial;`);
-        await query(`LOAD spatial;`);
-
-        // Load spatial extension by default (only if you use the spatial layer)
-        // await query(`LOAD '/opt/nodejs/node_modules/duckdb/extensions/spatial.duckdb_extension';`);
+        await query(`INSTALL arrow;`, false);
+        await query(`LOAD arrow;`, false);
         
         // Whether or not the global http metadata is used to cache HTTP metadata, see https://github.com/duckdb/duckdb/pull/5405
-        await query(`SET enable_http_metadata_cache=true;`);
+        await query(`SET enable_http_metadata_cache=true;`, false);
         // Whether or not object cache is used to cache e.g. Parquet metadata
-        await query(`SET enable_object_cache=true;`);
+        await query(`SET enable_object_cache=true;`, false);
 
         requestLogger.debug({ message: 'Initial setup done!' });
-
-        const awsSetupStartTimestamp = new Date().getTime();
         
         // Set AWS credentials
         // See https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime
-        await query(`SET s3_region='${process.env.AWS_REGION}';`);
-        // await query(`SET s3_access_key_id='${process.env.AWS_ACCESS_KEY_ID}';`);
-        // await query(`SET s3_secret_access_key='${process.env.AWS_SECRET_ACCESS_KEY}';`);
-        // await query(`SET s3_session_token='${process.env.AWS_SESSION_TOKEN}';`);
+        // await query(`SET s3_region='${process.env.AWS_REGION}';`, false);
+        // await query(`SET s3_access_key_id='${process.env.AWS_ACCESS_KEY_ID}';`, false);
+        // await query(`SET s3_secret_access_key='${process.env.AWS_SECRET_ACCESS_KEY}';`, false);
+        // await query(`SET s3_session_token='${process.env.AWS_SESSION_TOKEN}';`, false);
 
         requestLogger.debug({ message: 'AWS setup done!' });
 
@@ -126,22 +118,14 @@ exports.handler = awslambda.streamifyResponse(async (
         isInitialized = true;
       }
 
-      // Track query start timestamp
-      const queryStartTimestamp = new Date().getTime();
-
       // Set Content-Type header
       metadata.headers['Content-Type'] = 'application/octet-stream';
 
       // Use global helper to pass metadata and status code
       responseStream = awslambda.HttpResponseStream.from(responseStream, metadata);
 
-      if (body?.startsWith('install') || body?.startsWith('load') || body?.startsWith('pragma')) {
-        // Run query
-        const queryResult = await query(body);
-      } else {
-        // Pipeline the Arrow IPC stream to the response stream
-        await Pipeline(await connection.arrowIPCStream(body), responseStream);
-      }
+      // Pipeline the Arrow IPC stream to the response stream
+      await Pipeline(await connection.arrowIPCStream(filterQuery(body)), responseStream);
 
       // Close response stream
       responseStream.end();
