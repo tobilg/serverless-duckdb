@@ -1,5 +1,8 @@
 # serverless-duckdb
-An example of how to run DuckDB on AWS Lambda & API Gateway. This will create an API Gateway endpoint to which DuckDB queries can be issued via a POST request that is authenticated by an API Key.
+An example of how to run DuckDB on AWS Lambda & API Gateway. This will deploy two Lambda functions:
+
+* An **API Gateway endpoint** to which DuckDB queries can be issued via a POST request, which is authenticated by an API Key
+* A **Function URL Lambda** that supports streaming the query results as an Apache Arrow IPC stream, which uses **NO** authentication by default (you can add `AWS_IAM` auth manually if you wish)
 
 ## Requirements
 You'll need a current v3 version installation of the [Serverless Framework](https://serverless.com) on the machine you're planning to deploy the application from.
@@ -29,17 +32,31 @@ The deployment should take 2-3 minutes. Once the deployment is finished, you sho
 ```yaml
 api keys:
   DuckDBKey: REDACTED
-endpoint: POST - https://REDACTED.execute-api.us-east-1.amazonaws.com/prd/v1/query
+endpoints:
+  POST - https://REDACTED.execute-api.us-east-1.amazonaws.com/prd/v1/query
+  streamingQuery: https://REDACTED.lambda-url.us-east-1.on.aws/
 ```
 
 ## Usage
+
+### API Gateway endpoint
 You can now query your DuckDB endpoint via HTTP requests (don't forget to exchange `REDACTED` with your real URL and API Key), e.g.
 
 ```bash
-curl --location --request POST 'https://REDACTED.execute-api.us-east-1.amazonaws.com/prd/v1/query' \
---header 'x-api-key: REDACTED' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "query": "SELECT avg(c_acctbal) FROM '\''https://shell.duckdb.org/data/tpch/0_01/parquet/customer.parquet'\'';"
-}'
+curl -L -XPOST 'https://REDACTED.execute-api.us-east-1.amazonaws.com/prd/v1/query' \
+  --header 'x-api-key: REDACTED' \
+  --header 'Content-Type: application/json' \
+  --data-raw '{
+      "query": "SELECT avg(c_acctbal) FROM '\''https://shell.duckdb.org/data/tpch/0_01/parquet/customer.parquet'\'';"
+  }'
 ```
+
+### Function URL Lambda
+You can query the streaming Lambda by issueing the following command (don't forget to specify an `--output` path, this is where the Apache Arrow file will be stored):
+
+```bash
+curl -L -XPOST 'https://REDACTED.lambda-url.us-east-1.on.aws/' \
+  --header 'Content-Type: application/json' \
+  --data-raw 'SELECT 1' \
+  --output /tmp/result.arrow
+``````
