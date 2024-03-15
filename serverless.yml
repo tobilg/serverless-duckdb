@@ -64,7 +64,7 @@ functions:
     layers:
       # Latest x86 layer
       - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:8'
-  
+
   # Request-Response Lambda function: Will return results as JSON en bloc
   query:
     handler: src/functions/query.handler

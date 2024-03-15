@@ -108,4 +108,3 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       GroupDescription: 'Security group for VPC Endpoint Lambda'
-  
