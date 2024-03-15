@@ -1,0 +1,111 @@
+# See:
+# * https://www.infoq.com/articles/aws-vpc-cloudformation/
+# * https://www.infoq.com/articles/aws-vpc-cloudformation-part2/
+# * https://templates.cloudonaut.io/en/stable/vpc/
+
+Resources:
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/20
+      EnableDnsSupport: True
+      EnableDnsHostnames: True
+      InstanceTenancy: default
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  
+  GatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+        VpcId: !Ref VPC
+        InternetGatewayId: !Ref InternetGateway
+  
+  PrivateASubnet:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      AvailabilityZoneId: ${self:custom.s3.availabilityZoneId}
+      CidrBlock: 10.0.0.0/23
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: 'Private Subnet A'
+        - Key: Reach
+          Value: private
+
+  PrivateARouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties: 
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: 'Private A'
+
+  PrivateASubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref PrivateARouteTable
+      SubnetId: !Ref PrivateASubnet
+
+  NetworkAclPrivate:
+    Type: 'AWS::EC2::NetworkAcl'
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Name
+        Value: Private
+
+  PrivateASubnetNetworkAclAssociation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties: 
+      NetworkAclId: !Ref NetworkAclPrivate
+      SubnetId: !Ref PrivateASubnet
+
+  NetworkAclEntryInPrivateAllowAll:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      NetworkAclId: !Ref NetworkAclPrivate
+      RuleNumber: 99
+      Protocol: -1
+      RuleAction: allow
+      Egress: false
+      CidrBlock: '0.0.0.0/0'
+
+  NetworkAclEntryOutPrivateAllowAll:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      NetworkAclId: !Ref NetworkAclPrivate
+      RuleNumber: 99
+      Protocol: -1
+      RuleAction: allow
+      Egress: true
+      CidrBlock: '0.0.0.0/0'
+  
+  # See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-vpcendpoint.html
+  S3VPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: 'com.amazonaws.${self:provider.region}.s3express'
+      RouteTableIds:
+        - !Ref PrivateARouteTable
+      VpcEndpointType: Gateway
+      VpcId: !Ref VPC
+  
+  VpcEndpointSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: 'Security group for VPC Endpoints'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !GetAtt VpcEndpointLambdaSecurityGroup.GroupId
+  
+  VpcEndpointLambdaSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: 'Security group for VPC Endpoint Lambda'
+  

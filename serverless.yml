@@ -12,6 +12,14 @@ custom:
   # API details
   api:
     version: 'v1'
+
+  # Availability Zone info
+  # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-networking.html#s3-express-endpoints
+  # us-east-1 / az4
+  # Uncomment if you want to use S3 Express One Zone
+  # s3:
+  #   availabilityZoneId: 'use1-az4'
+  #   bucketName: 'serverless-duckdb--${self:custom.s3.availabilityZoneId}--x-s3'
   
   # esbuild plugin
   esbuild:
@@ -35,9 +43,12 @@ provider:
   logRetentionInDays: 14
   apiGateway:
     apiKeys:
-      - DuckDBKey
+      - DuckDBExpressKey
   environment:
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1' # Enable HTTP keep-alive connections for the AWS SDK
+    # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-networking.html#s3-express-endpoints
+    # Uncomment if you want to use S3 Express One Zone
+    # AWS_S3_ONE_ZONE_EXPRESS_ENDPOINT: 's3express-${self:custom.s3.availabilityZoneId}.${self:provider.region}.amazonaws.com'
     STAGE: '${self:provider.stage}'
     LOG_LEVEL: 'debug'
 
@@ -53,7 +64,7 @@ functions:
     layers:
       # Latest x86 layer
       - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:8'
-
+  
   # Request-Response Lambda function: Will return results as JSON en bloc
   query:
     handler: src/functions/query.handler
@@ -97,6 +108,43 @@ functions:
           method: post
           cors: true
           private: true
+
+  # Uncomment if you want to use S3 Express One Zone
+  # queryS3Express:
+  #   handler: src/functions/queryS3Express.handler
+  #   # Max memory and thus vCPUs
+  #   memorySize: 10240
+  #   # Max timeout for API Gateway REST APIs
+  #   timeout: 30
+  #   # Enable this for custom IAM roles for S3 access
+  #   iamRoleStatements:
+  #     # Read from S3 Express One Zone bucket
+  #     # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-security-iam.html#s3-express-security-iam-authorization
+  #     - Effect: Allow
+  #       Action:
+  #         - s3express:CreateSession
+  #       Resource: !Join [':', [ 'arn:aws:s3express', '${self:provider.region}', !Ref 'AWS::AccountId', 'bucket/${self:custom.s3.bucketName}' ]]
+  #   layers:
+  #     # Latest x86_64 extensions layer (includes aws, arrow, httpfs)
+  #     - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-extensions-nodejs-x86:1'
+  #   vpc:
+  #     securityGroupIds:
+  #       - !GetAtt VpcEndpointLambdaSecurityGroup.GroupId
+  #     subnetIds:
+  #       - !GetAtt PrivateASubnet.SubnetId
+  #   events:
+  #     - http:
+  #         path: ${self:custom.api.version}/queryS3Express
+  #         method: post
+  #         cors: true
+  #         private: true
+
+resources:
+  # Uncomment if you want to use S3 Express One Zone
+  # # VPC
+  # - ${file(resources/vpc.yml)}
+  # # S3 One Zone Express
+  # - ${file(resources/s3.yml)}
 
 package:
   individually: true

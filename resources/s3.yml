@@ -1,0 +1,8 @@
+Resources:
+  S3OneZoneExpressBucket:
+    Type: AWS::S3Express::DirectoryBucket
+    Properties:
+      # See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-s3express-directorybucket.html#cfn-s3express-directorybucket-bucketname
+      BucketName: '${self:custom.s3.bucketName}'
+      DataRedundancy: SingleAvailabilityZone
+      LocationName: ${self:custom.s3.availabilityZoneId}
