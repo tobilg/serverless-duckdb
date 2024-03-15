@@ -3,6 +3,7 @@ import DuckDB from 'duckdb';
 import { metricScope, Unit } from 'aws-embedded-metrics';
 import Logger from '../lib/logger';
 import { filterQuery } from '../lib/queryFilter';
+import { getAWSSecretQuery } from '../lib/awsSecret';
 
 // Patch BigInt
 (BigInt.prototype as any).toJSON = function() {
@@ -72,17 +73,13 @@ export const handler = metricScope(metrics => async (event: APIGatewayEvent, con
         // Load home directory
         await query(`SET home_directory='/tmp';`, false);
 
-        // Enable loading of Lambda extensions from https://extensions.quacking.cloud (see website for list of extensions)
-        await query(`SET custom_extension_repository = 'http://extensions.quacking.cloud';`, false);
-        
-        // Hint: INSTALL httpfs; is needed again, because it's no longer included in the new repo:
-        // https://github.com/duckdb/duckdb-node/tree/v0.9.1/src/duckdb/extension
-        // This will install it from http://extensions.quacking.cloud
-        await query(`INSTALL httpfs;`, false);
-        await query(`LOAD httpfs;`, false);
-
-        // Load spatial extension by default (only if you use the spatial layer)
-        // await query(`LOAD '/opt/nodejs/node_modules/duckdb/extensions/spatial.duckdb_extension';`);
+        // Install and load local extensions
+        await query(`INSTALL '/opt/nodejs/node_modules/duckdb/extensions/aws.duckdb_extension';`, false);
+        await query(`LOAD '/opt/nodejs/node_modules/duckdb/extensions/aws.duckdb_extension';`, false);
+        await query(`INSTALL '/opt/nodejs/node_modules/duckdb/extensions/httpfs.duckdb_extension';`, false);
+        await query(`LOAD '/opt/nodejs/node_modules/duckdb/extensions/httpfs.duckdb_extension';`, false);
+        await query(`INSTALL '/opt/nodejs/node_modules/duckdb/extensions/arrow.duckdb_extension';`, false);
+        await query(`LOAD '/opt/nodejs/node_modules/duckdb/extensions/arrow.duckdb_extension';`, false);
         
         // Whether or not the global http metadata is used to cache HTTP metadata, see https://github.com/duckdb/duckdb/pull/5405
         await query(`SET enable_http_metadata_cache=true;`, false);
@@ -94,12 +91,8 @@ export const handler = metricScope(metrics => async (event: APIGatewayEvent, con
 
         const awsSetupStartTimestamp = new Date().getTime();
         
-        // Set AWS credentials
-        // See https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime
-        // await query(`SET s3_region='${process.env.AWS_REGION}';`, false);
-        // await query(`SET s3_access_key_id='${process.env.AWS_ACCESS_KEY_ID}';`, false);
-        // await query(`SET s3_secret_access_key='${process.env.AWS_SECRET_ACCESS_KEY}';`, false);
-        // await query(`SET s3_session_token='${process.env.AWS_SESSION_TOKEN}';`, false);
+        // Set AWS credentials, endpoint and region
+        await query(getAWSSecretQuery(), false);
 
         requestLogger.debug({ message: 'AWS setup done!' });
         metrics.putMetric('AWSSetupDuration', (new Date().getTime() - awsSetupStartTimestamp), Unit.Milliseconds);
