@@ -43,7 +43,7 @@ provider:
   logRetentionInDays: 14
   apiGateway:
     apiKeys:
-      - DuckDBExpressKey
+      - DuckDBApiKey
   environment:
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1' # Enable HTTP keep-alive connections for the AWS SDK
     # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-networking.html#s3-express-endpoints
@@ -63,7 +63,7 @@ functions:
       invokeMode: RESPONSE_STREAM
     layers:
       # Latest x86 layer
-      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:8'
+      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:10'
 
   # Request-Response Lambda function: Will return results as JSON en bloc
   query:
@@ -99,9 +99,9 @@ functions:
     #     Resource: 'arn:aws:s3:::YOUR-S3-OUTPUT-BUCKET-NAME/*'
     layers:
       # Latest x86_64 layer
-      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:8'
+      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:10'
       # Latest arm64 layer
-      # - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-arm64:5'
+      # - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-arm64:8'
     events:
       - http:
           path: ${self:custom.api.version}/query
@@ -126,7 +126,7 @@ functions:
   #       Resource: !Join [':', [ 'arn:aws:s3express', '${self:provider.region}', !Ref 'AWS::AccountId', 'bucket/${self:custom.s3.bucketName}' ]]
   #   layers:
   #     # Latest x86_64 extensions layer (includes aws, arrow, httpfs)
-  #     - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-extensions-nodejs-x86:1'
+  #     - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-extensions-nodejs-x86:4'
   #   vpc:
   #     securityGroupIds:
   #       - !GetAtt VpcEndpointLambdaSecurityGroup.GroupId
