@@ -63,7 +63,7 @@ functions:
       invokeMode: RESPONSE_STREAM
     layers:
       # Latest x86 layer
-      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:10'
+      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:11'
 
   # Request-Response Lambda function: Will return results as JSON en bloc
   query:
@@ -99,9 +99,9 @@ functions:
     #     Resource: 'arn:aws:s3:::YOUR-S3-OUTPUT-BUCKET-NAME/*'
     layers:
       # Latest x86_64 layer
-      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:10'
+      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:11'
       # Latest arm64 layer
-      # - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-arm64:8'
+      # - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-arm64:9'
     events:
       - http:
           path: ${self:custom.api.version}/query
@@ -126,7 +126,7 @@ functions:
   #       Resource: !Join [':', [ 'arn:aws:s3express', '${self:provider.region}', !Ref 'AWS::AccountId', 'bucket/${self:custom.s3.bucketName}' ]]
   #   layers:
   #     # Latest x86_64 extensions layer (includes aws, arrow, httpfs)
-  #     - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-extensions-nodejs-x86:4'
+  #     - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-extensions-nodejs-x86:5'
   #   vpc:
   #     securityGroupIds:
   #       - !GetAtt VpcEndpointLambdaSecurityGroup.GroupId
