@@ -85,6 +85,10 @@ export const handler = metricScope(metrics => async (event: APIGatewayEvent, con
         await query(`SET enable_http_metadata_cache=true;`, false);
         // Whether or not object cache is used to cache e.g. Parquet metadata
         await query(`SET enable_object_cache=true;`, false);
+        // Disable local filesystem
+        await query(`SET disabled_filesystems = 'LocalFileSystem';`, false);
+        // Enable lock configuration
+        await query(`SET lock_configuration = true;`, false);
 
         requestLogger.debug({ message: 'Initial setup done!' });
         metrics.putMetric('InitialSetupDuration', (new Date().getTime() - initialSetupStartTimestamp), Unit.Milliseconds);

@@ -75,8 +75,7 @@ export const handler = metricScope(metrics => async (event: APIGatewayEvent, con
         // Enable loading of Lambda extensions from https://extensions.quacking.cloud (see website for list of extensions)
         await query(`SET custom_extension_repository = 'http://extensions.quacking.cloud';`, false);
         
-        // Hint: INSTALL httpfs; is needed again, because it's no longer included in the new repo:
-        // https://github.com/duckdb/duckdb-node/tree/v0.9.1/src/duckdb/extension
+        // Hint: INSTALL httpfs; is needed again, because it's no longer included
         // This will install it from http://extensions.quacking.cloud
         await query(`INSTALL httpfs;`, false);
         await query(`LOAD httpfs;`, false);
@@ -88,6 +87,10 @@ export const handler = metricScope(metrics => async (event: APIGatewayEvent, con
         await query(`SET enable_http_metadata_cache=true;`, false);
         // Whether or not object cache is used to cache e.g. Parquet metadata
         await query(`SET enable_object_cache=true;`, false);
+        // Disable local filesystem
+        await query(`SET disabled_filesystems = 'LocalFileSystem';`, false);
+        // Enable lock configuration
+        await query(`SET lock_configuration = true;`, false);
 
         requestLogger.debug({ message: 'Initial setup done!' });
         metrics.putMetric('InitialSetupDuration', (new Date().getTime() - initialSetupStartTimestamp), Unit.Milliseconds);
