@@ -85,13 +85,12 @@ exports.handler = awslambda.streamifyResponse(async (
         // Load home directory
         await query(`SET home_directory='/tmp';`, false);
 
-        // Enable loading of Lambda extensions from https://extensions.quacking.cloud (see website for list of extensions)
-        await query(`SET custom_extension_repository = 'http://extensions.quacking.cloud';`, false);
-        
-        // Hint: INSTALL httpfs; is needed again, because it's no longer included
-        // This will install it from http://extensions.quacking.cloud
+        // Install and load httpfs extension
         await query(`INSTALL httpfs;`, false);
         await query(`LOAD httpfs;`, false);
+
+        // Enable loading of Lambda extensions from https://extensions.quacking.cloud (see website for list of extensions)
+        await query(`SET custom_extension_repository = 'https://extensions.quacking.cloud';`, false);
 
         // Install the Apache Arrow extension
         await query(`INSTALL arrow;`, false);

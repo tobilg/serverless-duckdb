@@ -72,17 +72,12 @@ export const handler = metricScope(metrics => async (event: APIGatewayEvent, con
         // Load home directory
         await query(`SET home_directory='/tmp';`, false);
 
-        // Enable loading of Lambda extensions from https://extensions.quacking.cloud (see website for list of extensions)
-        await query(`SET custom_extension_repository = 'http://extensions.quacking.cloud';`, false);
-        
-        // Hint: INSTALL httpfs; is needed again, because it's no longer included
-        // This will install it from http://extensions.quacking.cloud
+        // Install and load httpfs extension
         await query(`INSTALL httpfs;`, false);
         await query(`LOAD httpfs;`, false);
 
-        // Load spatial extension by default (only if you use the spatial layer)
-        // await query(`LOAD '/opt/nodejs/node_modules/duckdb/extensions/spatial.duckdb_extension';`);
-        
+        // Enable loading of Lambda extensions from https://extensions.quacking.cloud (see website for list of extensions)
+        await query(`SET custom_extension_repository = 'https://extensions.quacking.cloud';`, false);
         // Whether or not the global http metadata is used to cache HTTP metadata, see https://github.com/duckdb/duckdb/pull/5405
         await query(`SET enable_http_metadata_cache=true;`, false);
         // Whether or not object cache is used to cache e.g. Parquet metadata
