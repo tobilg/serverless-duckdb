@@ -37,7 +37,7 @@ custom:
 
 provider:
   name: aws
-  runtime: nodejs16.x
+  runtime: nodejs18.x
   region: ${opt:region, 'us-east-1'}
   stage: 'prd'
   logRetentionInDays: 14
@@ -63,7 +63,7 @@ functions:
       invokeMode: RESPONSE_STREAM
     layers:
       # Latest x86 layer
-      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:15'
+      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:16'
 
   # Request-Response Lambda function: Will return results as JSON en bloc
   query:
@@ -99,7 +99,7 @@ functions:
     #     Resource: 'arn:aws:s3:::YOUR-S3-OUTPUT-BUCKET-NAME/*'
     layers:
       # Latest x86_64 layer
-      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:15'
+      - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-x86:16'
       # Latest arm64 layer
       # - 'arn:aws:lambda:${self:provider.region}:041475135427:layer:duckdb-nodejs-arm64:12'
     events:
